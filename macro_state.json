@@ -1,0 +1,11 @@
+{
+  "regime": "DISTRIBUTION",
+  "liquidity": "contracting",
+  "dxy_trend": "rising",
+  "yields": "falling",
+  "credit": "stable",
+  "risk_budget": 0.65,
+  "deployment_multiplier": 0.7,
+  "cash_target_min": 0.15,
+  "cash_target_max": 0.25
+}
