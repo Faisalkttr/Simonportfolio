@@ -1,0 +1,35 @@
+name: Run Portfolio Calculation Engine
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'   # Midnight UTC, Monday-Friday
+  workflow_dispatch: {}      # Manual "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scoring engine
+        run: python engine.py
+
+      - name: Commit and push updated state
+        run: |
+          git config --global user.name "sovereignty-engine-bot"
+          git config --global user.email "actions@users.noreply.github.com"
+          git add portfolio_state.json
+          git diff --cached --quiet || git commit -m "Automated: recalculated portfolio scores"
+          git push
