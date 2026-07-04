@@ -1,12 +1,20 @@
+
 import yaml
 import json
 import datetime
 import yfinance as yf
 import pandas as pd
 
+# 🔴 IMPORT YOUR MACRO ENGINE
+from Execution_Engine_fixed_Claude import (
+    macro_score,
+    macro_phase_v2,
+    governed_target,
+    tilted_grid
+)
+
 SCHEMA_PATH = "schema.yaml"
 STATE_PATH = "portfolio_state.json"
-MACRO_PATH = "macro_state.json"
 
 TIER_WEIGHTS = {
     "Tier 1": 1.0,
@@ -15,31 +23,27 @@ TIER_WEIGHTS = {
 }
 
 CLUSTER_MAP = {
-    "INFRA": "infra",
-    "ENERGY_COMMODITY": "commodity",
-    "AI_SEMIS": "ai_infra",
-    "EM": "em"
+    "INFRA": "INFRA",
+    "ENERGY_COMMODITY": "ENERGY_COMMODITY",
+    "AI_SEMIS": "AI_SEMIS",
+    "EM": "EM"
 }
 
 
 # ----------------------------
-# LOADERS
+# LOAD WATCHLIST
 # ----------------------------
 def load_schema():
     with open(SCHEMA_PATH, "r") as f:
         return yaml.safe_load(f)
 
 
-def load_macro():
-    with open(MACRO_PATH, "r") as f:
-        return json.load(f)
-
-
 # ----------------------------
-# SCORING HELPERS
+# METRIC CALCULATION
 # ----------------------------
 def survivability_score(info):
     dte = info.get("debtToEquity", None)
+
     if dte is None:
         return 50
     if dte < 50:
@@ -83,90 +87,126 @@ def calculate_metrics(symbol):
 
 
 # ----------------------------
-# MACRO ADJUSTMENTS
+# BASE SCORING
 # ----------------------------
-def macro_adjust(score, cluster, macro):
-    if macro["dxy_trend"] == "rising" and cluster in ["commodity", "em"]:
-        score *= 0.7
+def composite_score(q, v, o, h, s):
+    return (
+        q * 0.25 +
+        v * 0.15 +
+        o * 0.20 +
+        h * 0.10 +
+        s * 0.30
+    )
 
-    if macro["liquidity"] == "contracting" and cluster == "ai_infra":
-        score *= 0.75
 
-    if macro["yields"] == "falling" and cluster == "infra":
-        score *= 1.1
+# ----------------------------
+# MACRO TIER DISTORTION
+# ----------------------------
+def adjust_score_for_macro(score):
+    # 🔴 Contraction → suppress scores
+    if macro_score < -20:
+        score *= 0.85
+
+    # 🔴 Expansion → boost top names
+    elif macro_score > 40:
+        score *= 1.10
 
     return score
 
 
-def tier(score):
+def determine_tier(score):
     if score >= 75:
         return "Tier 1"
     elif score >= 55:
         return "Tier 2"
-    return "Tier 3"
+    else:
+        return "Tier 3"
 
 
 # ----------------------------
 # MAIN ENGINE
 # ----------------------------
 def run():
+
     schema = load_schema()
-    macro = load_macro()
 
-    assets = []
+    rows = []
 
+    # ----------------------------
+    # STEP 1: SCORE ALL TICKERS
+    # ----------------------------
     for section in schema["sections"]:
-        cluster = CLUSTER_MAP[section["name"]]
+        section_name = section["name"]
 
         for layer in section["layers"]:
             for ticker in layer["permissible_assets"]:
 
                 price, q, v, o, h, s, ok = calculate_metrics(ticker)
 
-                base_score = (
-                    q * 0.25 +
-                    v * 0.15 +
-                    o * 0.20 +
-                    h * 0.10 +
-                    s * 0.30
-                )
+                base = composite_score(q, v, o, h, s)
+                adj = adjust_score_for_macro(base)
 
-                adj_score = macro_adjust(base_score, cluster, macro)
-                t = tier(adj_score)
+                tier = determine_tier(adj)
 
-                assets.append({
+                rows.append({
                     "ticker": ticker,
-                    "cluster": cluster,
-                    "score": round(adj_score, 1),
-                    "tier": t,
+                    "section": section_name,
+                    "score": round(adj, 1),
+                    "tier": tier,
                     "data_ok": ok
                 })
 
-    # ----------------------------
-    # ALLOCATION ENGINE
-    # ----------------------------
-    weights = [TIER_WEIGHTS[a["tier"]] for a in assets]
-    total_weight = sum(weights) or 1
+    df = pd.DataFrame(rows)
 
-    for i, a in enumerate(assets):
-        base_alloc = weights[i] / total_weight
-        macro_alloc = base_alloc * macro["deployment_multiplier"]
-        a["allocation"] = round(macro_alloc, 4)
+    # ----------------------------
+    # STEP 2: ALLOCATE WITHIN EACH SECTOR
+    # ----------------------------
+    allocations = []
 
-    total_alloc = sum(a["allocation"] for a in assets)
+    for section_name, group in df.groupby("section"):
+
+        sector_weight = tilted_grid.get(section_name, 0)
+
+        # Tier weights inside sector
+        weights = group["tier"].map(TIER_WEIGHTS)
+        total_weight = weights.sum()
+
+        if total_weight == 0:
+            group["final_alloc"] = 0
+        else:
+            normalized = weights / total_weight
+            group["final_alloc"] = normalized * sector_weight
+
+        allocations.append(group)
+
+    df = pd.concat(allocations)
+
+    # ----------------------------
+    # STEP 3: APPLY GLOBAL RISK BUDGET
+    # ----------------------------
+    df["final_alloc"] = df["final_alloc"] * governed_target
+
+    total_alloc = df["final_alloc"].sum()
     cash = round(1 - total_alloc, 4)
 
+    # ----------------------------
+    # FINAL OUTPUT
+    # ----------------------------
     state = {
         "timestamp": datetime.datetime.utcnow().isoformat(),
-        "macro": macro,
+        "macro": {
+            "score": macro_score,
+            "phase": macro_phase_v2,
+            "risk_budget": governed_target
+        },
         "cash": cash,
-        "assets": assets
+        "assets": df.to_dict(orient="records")
     }
 
     with open(STATE_PATH, "w") as f:
         json.dump(state, f, indent=2)
 
-    print("✅ Engine complete")
+    print("✅ Fully integrated macro allocation complete")
 
 
 if __name__ == "__main__":
