@@ -11,49 +11,108 @@ meta:
 sections:
   - name: "INFRA"
     description: "Large-cap industrial, data-center, and grid infrastructure compounders"
+    target_weight: 0.15
     layers:
-      - name: "Core Compounders"
+      - name: "Layer 1: Hard Assets"
+        target_weight: 0.40
+        permissible_assets:
+          - TPL
+          - ADPORTS.AE   # Abu Dhabi Ports (ADX Exchange Suffix)
+          - ICTEY        # International Container Terminal Services ADR
+      - name: "Layer 2: Grid & Utilities"
+        target_weight: 0.40
         permissible_assets:
           - LIN
-          - ABBN
-      - name: "Data Center / Grid Buildout"
+          - ABBN.SW      # ABB Ltd (SIX Swiss Exchange Suffix)
+          - SU           # Suncor Energy Inc.
+          - NVT          # nVent Electric plc
+          - CEG          # Constellation Energy Corp.
+          - PWR          # Quanta Services Inc.
+          - CWCO         # Consolidated Water Co.
+      - name: "Layer 3: Tech-Adjacent"
+        target_weight: 0.20
         permissible_assets:
-          - EQIX
-          - NVT
-          - PWR
-      - name: "Logistics / Transport Moats"
-        permissible_assets:
-          - ODFL
+          - VRT          # Vertiv Holdings Co.
+          - BE           # Bloom Energy Corp.
 
   - name: "ENERGY_COMMODITY"
     description: "Energy, power generation, and commodity-royalty names"
+    target_weight: 0.23
     layers:
-      - name: "Power Generation"
+      - name: "Monetary Royalties"
+        target_weight: 0.40
         permissible_assets:
-          - CEG
-      - name: "Oil & Gas / Royalty"
+          - FNV          # Franco-Nevada Corp.
+          - WPM          # Wheaton Precious Metals
+      - name: "Baseload Energy"
+        target_weight: 0.40
         permissible_assets:
-          - SU
-          - TPL
+          - CCJ          # Cameco Corp.
+          - CNQ          # Canadian Natural Resources
+          - XOM          # Exxon Mobil Corp.
+      - name: "Industrial Materials"
+        target_weight: 0.20
+        permissible_assets:
+          - FCX          # Freeport-McMoRan Inc.
+          - BHP          # BHP Group Ltd ADR
+          - NEM          # Newmont Corp.
+          - COP          # ConocoPhillips
 
   - name: "AI_SEMIS"
-    description: "AI infrastructure hardware — power, cooling, fuel cells (higher volatility, treat with extra caution per user preference)"
+    description: "AI infrastructure hardware — power, cooling, fuel cells (higher volatility)"
+    target_weight: 0.10
     layers:
-      - name: "AI Power & Cooling Hardware"
+      - name: "Layer 1: Physical Monopolies"
+        target_weight: 0.60
         permissible_assets:
-          - BE
-          - VRT
+          - TSM          # Taiwan Semiconductor Manufacturing ADR
+          - ASML         # ASML Holding NV ADR
+          - SHECY        # Shin-Etsu Chemical ADR
+          - 6920.T       # Lasertec Corp (Tokyo Stock Exchange Suffix)
+      - name: "Layer 2: Architecture & Robotics"
+        target_weight: 0.30
+        permissible_assets:
+          - AVGO         # Broadcom Inc.
+          - CDNS         # Cadence Design Systems
+          - QCOM         # Qualcomm Inc.
+          - FANUY        # Fanuc Corp ADR
+          - 8035.T       # Tokyo Electron Ltd (Tokyo Stock Exchange Suffix)
+          - SNPS         # Synopsys Inc.
+      - name: "Layer 3: Velocity Applications"
+        target_weight: 0.10
+        permissible_assets:
+          - NOW          # ServiceNow Inc.
+          - PANW         # Palo Alto Networks
+          - STX          # Seagate Technology
 
   - name: "EM"
     description: "Emerging-market / international infrastructure and utilities"
+    target_weight: 0.07
     layers:
-      - name: "Ports & Logistics"
+      - name: "INDIA"
+        target_weight: 0.40
         permissible_assets:
-          - ADPORTS
-          - ICTEY
-      - name: "Water / Utility"
+          - ABB.NS          # ABB India Ltd (NSE Suffix)
+          - SIEMENS.NS      # Siemens India Ltd (NSE Suffix)
+          - HITACHIENER.NS  # Hitachi Energy India (NSE Ticker Check)
+          - CGPOWER.NS      # CG Power & Industrial Solutions (NSE Suffix)
+          - PIIND.NS        # PI Industries Ltd (NSE Ticker Check)
+          - SUNPHARMA.NS    # Sun Pharmaceutical Industries (NSE Suffix)
+          - HCLTECH.NS      # HCL Technologies Ltd (NSE Suffix)
+      - name: "GCC"
+        target_weight: 0.40
         permissible_assets:
-          - CWCO
+          - 2222.SR         # Saudi Aramco (Tadawul Suffix)
+          - ADNOCGAS.AE     # ADNOC Gas (ADX Exchange Suffix)
+          - ACWAPOWER.SR    # ACWA Power Co (Tadawul Suffix)
+          - STC.SR          # Saudi Telecom Company (Tadawul Suffix)
+      - name: "Other Jurisdiction"
+        target_weight: 0.20
+        permissible_assets:
+          - 7203.T          # Toyota Motor / Alternative Japan Proxy (replaces HIJP text placeholder)
+          - TLK             # Telkom Indonesia ADR
+          - VALE            # Vale S.A. ADR
+          - ISDE            # iShares MSCI UAE ETF (Tradeable proxy mapping for regional tracking)
 
 deployment_rules:
   tier_1:
@@ -70,11 +129,5 @@ deployment_rules:
     description: "Valuation, momentum, or sentiment stretched — zero or near-zero new capital."
 
 position_caps:
-  # Fill in your own long-term max position size (as % of total portfolio) per ticker.
-  # The engine will flag "near_cap" / "at_cap" / "under_cap" once you provide current
-  # holdings via portfolio_state.json or a future holdings.yaml file.
   default_max_position_pct: 8
   overrides: {}
-    # Example:
-    # LIN: 10
-    # BE: 3
