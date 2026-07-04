@@ -1,0 +1,80 @@
+meta:
+  name: "Infra Watchlist Portfolio Operating System"
+  version: "1.0"
+  base_currency: "USD"
+  description: >
+    Monthly DCA deployment schema for the infrastructure / AI-power / EM logistics
+    watchlist. Each section maps to a scoring-family weight profile in engine.py.
+    Update permissible_assets to add/remove tickers; the engine re-scores everything
+    automatically on the next scheduled run.
+
+sections:
+  - name: "INFRA"
+    description: "Large-cap industrial, data-center, and grid infrastructure compounders"
+    layers:
+      - name: "Core Compounders"
+        permissible_assets:
+          - LIN
+          - ABBN
+      - name: "Data Center / Grid Buildout"
+        permissible_assets:
+          - EQIX
+          - NVT
+          - PWR
+      - name: "Logistics / Transport Moats"
+        permissible_assets:
+          - ODFL
+
+  - name: "ENERGY_COMMODITY"
+    description: "Energy, power generation, and commodity-royalty names"
+    layers:
+      - name: "Power Generation"
+        permissible_assets:
+          - CEG
+      - name: "Oil & Gas / Royalty"
+        permissible_assets:
+          - SU
+          - TPL
+
+  - name: "AI_SEMIS"
+    description: "AI infrastructure hardware — power, cooling, fuel cells (higher volatility, treat with extra caution per user preference)"
+    layers:
+      - name: "AI Power & Cooling Hardware"
+        permissible_assets:
+          - BE
+          - VRT
+
+  - name: "EM"
+    description: "Emerging-market / international infrastructure and utilities"
+    layers:
+      - name: "Ports & Logistics"
+        permissible_assets:
+          - ADPORTS
+          - ICTEY
+      - name: "Water / Utility"
+        permissible_assets:
+          - CWCO
+
+deployment_rules:
+  tier_1:
+    label: "Accumulate Heavy"
+    capital_share_range: [50, 70]
+    description: "Quality and price both favorable this month — highest conviction for new money."
+  tier_2:
+    label: "Maintenance DCA"
+    capital_share_range: [30, 50]
+    description: "Fundamentally strong, but not the best entry point this month — keep steady, smaller DCA."
+  tier_3:
+    label: "Strictly Capped / Trim"
+    capital_share_range: [0, 0]
+    description: "Valuation, momentum, or sentiment stretched — zero or near-zero new capital."
+
+position_caps:
+  # Fill in your own long-term max position size (as % of total portfolio) per ticker.
+  # The engine will flag "near_cap" / "at_cap" / "under_cap" once you provide current
+  # holdings via portfolio_state.json or a future holdings.yaml file.
+  default_max_position_pct: 8
+  overrides: {}
+    # Example:
+    # LIN: 10
+    # BE: 3
